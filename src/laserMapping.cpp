@@ -58,6 +58,8 @@
 #include <iostream>
 #include <string>
 
+#include <hector_icp/PLICP_Trans.h>//include custom msg type
+
 #include "lidarFactor.hpp"
 #include "aloam_velodyne/common.h"
 #include "aloam_velodyne/tic_toc.h"
@@ -226,6 +228,27 @@ void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr &laserOdometry)
 	odomAftMapped.pose.pose.position.y = t_w_curr.y();
 	odomAftMapped.pose.pose.position.z = t_w_curr.z();
 	pubOdomAftMappedHighFrec.publish(odomAftMapped);
+}
+
+void LaserTrackerCallBack(const hector_icp::PLICP_Trans& Trans)//lucas
+{
+    const int dim = 3;//setting dementional
+    float val_Rm[dim*dim];
+    float val_tm[dim];
+
+    for (int i = 0; i < dim*dim; ++i){
+      val_Rm[i] = Trans.rotation.data[i];
+      // val_Rm[i] = 0.0f;
+    }
+	
+    for (int i = 0; i < 3; ++i){
+      // val_tm[i] = mapTrans[i];
+      val_tm[i] = Trans.transform.data[i];
+      // val_tm[i] = 0.0f;
+	}
+	printf("------------------------------------------------------\n");
+	printf("Rotation %f, Translation %f\n", val_Rm[8], val_tm[2]);
+	printf("------------------------------------------------------\n");
 }
 
 void process()
@@ -592,7 +615,7 @@ void process()
 								Eigen::Vector3d tmp(laserCloudCornerFromMap->points[pointSearchInd[j]].x,
 													laserCloudCornerFromMap->points[pointSearchInd[j]].y,
 													laserCloudCornerFromMap->points[pointSearchInd[j]].z);
-								center = center + tm
+								center = center + tmp;
 								nearCorners.push_back(tmp);
 							}
 							center = center / 5.0; //五点质心坐标
@@ -902,8 +925,10 @@ int main(int argc, char **argv)
 
 	float lineRes = 0;
 	float planeRes = 0;
+
 	nh.param<float>("mapping_line_resolution", lineRes, 0.4);
 	nh.param<float>("mapping_plane_resolution", planeRes, 0.8);
+
 	printf("line resolution %f plane resolution %f \n", lineRes, planeRes);
 	downSizeFilterCorner.setLeafSize(lineRes, lineRes,lineRes);
 	downSizeFilterSurf.setLeafSize(planeRes, planeRes, planeRes);
@@ -915,6 +940,8 @@ int main(int argc, char **argv)
 	ros::Subscriber subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("/laser_odom_to_init", 100, laserOdometryHandler);
 
 	ros::Subscriber subLaserCloudFullRes = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_cloud_3", 100, laserCloudFullResHandler);
+
+	ros::Subscriber TransformSubscribe = nh.subscribe("/PCL_Trans", 2, LaserTrackerCallBack);//lucas
 
 	pubLaserCloudSurround = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surround", 100);
 
