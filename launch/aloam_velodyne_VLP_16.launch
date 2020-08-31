@@ -17,19 +17,21 @@
     <node pkg="aloam_velodyne" type="alaserOdometry" name="alaserOdometry" output="screen" />
 
     <node pkg="aloam_velodyne" type="alaserMapping" name="alaserMapping" output="screen" />
+<!--     
+    <node pkg="aloam_velodyne" type="icpTrajectory" name="icpTrajectory" output="screen">
+        <param name="sampling_round" value="2" />
+        <param name="sampling_num" value="300" />
+        <param name="iter_cycle" value="5" />
+        <param name="gap_limit" value="0.2" />
+        <param name="angle_limit" value="0.02" />
+        <param name="orin_corrention" value="false" />
+    </node> -->
 
     <arg name="rviz" default="true" />
     <group if="$(arg rviz)">
         <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find aloam_velodyne)/rviz_cfg/aloam_velodyne.rviz" />
     </group>
 
-    <!-- <node name="hector_icp" pkg="hector_icp" type="hector_icp" output="screen">
-        <param name="sampling_round" value="2" />
-        <param name="sampling_num" value="50" />
-        <param name="iter_cycle" value="1" />
-        <param name="gap_limit" value="1" />
-        <param name="rf_traj" value="1" />
-        <param name="tg_traj" value="1" />
-    </node> -->
+
 
 </launch>

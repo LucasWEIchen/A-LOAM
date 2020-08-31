@@ -121,6 +121,9 @@ Eigen::Vector3d t_wmap_wodom(0, 0, 0);
 Eigen::Quaterniond q_wodom_curr(1, 0, 0, 0);
 Eigen::Vector3d t_wodom_curr(0, 0, 0);
 
+Eigen::Quaterniond q_ITM_curr(1, 0, 0, 0);
+Eigen::Vector3d t_ITM_curr(0, 0, 0);
+bool IMT_flag = false;
 
 std::queue<sensor_msgs::PointCloud2ConstPtr> cornerLastBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> surfLastBuf;
@@ -140,6 +143,8 @@ ros::Publisher pubLaserCloudSurround, pubLaserCloudMap, pubLaserCloudFullRes, pu
 
 nav_msgs::Path laserAfterMappedPath;
 
+
+//q_w_curr 当下全局旋转， q_wodom_curr 雷达里程计估算的两帧之间旋转， q_wmap_wodom
 // set initial guess
 void transformAssociateToMap()//计算最新局部位移在全局坐标系下的表达
 {
@@ -149,8 +154,18 @@ void transformAssociateToMap()//计算最新局部位移在全局坐标系下的
 
 void transformUpdate()//累计全局位移
 {
+	if (IMT_flag == true){
+		// q_w_curr = q_ITM_curr * q_w_curr;
+		// t_w_curr = t_w_curr - t_ITM_curr;
+		// t_w_curr.x() = t_w_curr.x() + t_ITM_curr.z();
+		// t_w_curr.y() = t_w_curr.y() + t_ITM_curr.x();
+		// t_w_curr.z() = t_w_curr.z() + t_ITM_curr.y();
+		IMT_flag = false;
+	}
+	
 	q_wmap_wodom = q_w_curr * q_wodom_curr.inverse();
 	t_wmap_wodom = t_w_curr - q_wmap_wodom * t_wodom_curr;
+
 }
 
 void pointAssociateToMap(PointType const *const pi, PointType *const po)
@@ -233,21 +248,47 @@ void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr &laserOdometry)
 void LaserTrackerCallBack(const hector_icp::PLICP_Trans& Trans)//lucas
 {
     const int dim = 3;//setting dementional
-    float val_Rm[dim*dim];
-    float val_tm[dim];
+    double val_Rm[dim*dim];
+    double val_tm[dim];
 
     for (int i = 0; i < dim*dim; ++i){
-      val_Rm[i] = Trans.rotation.data[i];
+      val_Rm[i] = static_cast<double>(Trans.rotation.data[i]);
       // val_Rm[i] = 0.0f;
     }
 	
-    for (int i = 0; i < 3; ++i){
+    for (int i = 0; i < dim; ++i){
       // val_tm[i] = mapTrans[i];
-      val_tm[i] = Trans.transform.data[i];
+      val_tm[i] = static_cast<double>(Trans.transform.data[i]);
       // val_tm[i] = 0.0f;
 	}
+
+
+	Eigen::Map<Eigen::Vector3d> t_ITM_curr2(val_tm);
+	Eigen::Matrix3d Rmat=Eigen::Map<Eigen::Matrix3d>(val_Rm, 3, 3);
+    Eigen::Quaterniond quaternion2(Rmat);
+
+	q_ITM_curr = quaternion2;
+	t_ITM_curr = t_ITM_curr2;
+	IMT_flag = true;
+	// q_ITM_curr = q_w_curr * quaternion2;
+	// m_2_q(val_Rm, q_ITM_curr);
+
+	// q_w_curr = q_ITM_curr * q_w_curr;
+	// t_w_curr = q_ITM_curr * t_w_curr + t_ITM_curr;
+
+	// transformUpdate();
+	// q_wmap_wodom = quaternion2;
+	// t_wmap_wodom = t_ITM_curr;
+	
+	// parameters[0] = q_ITM_curr.w();
+	// parameters[1] = q_ITM_curr.x();
+	// parameters[2] = q_ITM_curr.y();
+	// parameters[3] = q_ITM_curr.z();
+	// parameters[4] = t_ITM_curr.x();
+	// parameters[5] = t_ITM_curr.y();
+	// parameters[6] = t_ITM_curr.z();
 	printf("------------------------------------------------------\n");
-	printf("Rotation %f, Translation %f\n", val_Rm[8], val_tm[2]);
+	printf("QW %f, QX%f, QY%f, QZ%f\n TX%f, TY%f, TZ%f\n",  q_ITM_curr.w(), q_ITM_curr.x(),q_ITM_curr.y(),q_ITM_curr.z(),t_ITM_curr.x(),t_ITM_curr.y(),t_ITM_curr.z());
 	printf("------------------------------------------------------\n");
 }
 
@@ -756,6 +797,7 @@ void process()
 			{
 				ROS_WARN("time Map corner and surf num are not enough");
 			}
+
 			transformUpdate();//迭代结束更新相关的转移矩阵
 
 			TicToc t_add;
@@ -876,6 +918,7 @@ void process()
 			printf("mapping pub time %f ms \n", t_pub.toc());
 
 			printf("whole mapping time %f ms +++++\n", t_whole.toc());
+
 
 			nav_msgs::Odometry odomAftMapped;
 			odomAftMapped.header.frame_id = "/camera_init";
