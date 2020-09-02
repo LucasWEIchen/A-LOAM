@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <iostream>
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/transform_datatypes.h>
@@ -76,7 +75,7 @@ public:
     align_path_pub = n_.advertise<pcl::PointCloud<pcl::PointXYZ> >("align_path", 1);
     hector_path_pub = n_.advertise<pcl::PointCloud<pcl::PointXYZ> >("Hector_path", 1);
     tracker_path_pub = n_.advertise<pcl::PointCloud<pcl::PointXYZ> >("Tracker_path", 1);
-    // PCL_Trans_pub = n_.advertise<hector_icp::PLICP_Trans>("PCL_Trans", 1);
+    PCL_Trans_pub = n_.advertise<geometry_msgs::TransformStamped>("PCL_Trans", 1);
     gps_pub = n_.advertise<geometry_msgs::PoseStamped>("GPS_path", 1);
 }
 
@@ -137,13 +136,13 @@ public:
       if(laser_count >= path_flag*p_sampling_num && path_flag <= p_sampling_round){
         double residual = pclAssembler(cloud_Hector, cloud_Tracker, i, j, M, T, R, t, dim, mass_center, ceres_rot);
           // if success and residual is bigger than something!? lucas
-        if (residual < min_residual){
-            min_residual = residual;
-            ROS_INFO("###################### Alineing Reference Frame ###################### \n");
-            path_rotation = R;
-            path_translation = t;
-            rotatePoint(T, j, R, t, dim, ceres_rot);
-            ITMEncoder(cloud_ICP,T, j, dim);
+          min_residual = residual;
+          ROS_INFO("###################### Alineing Reference Frame ###################### \n");
+          path_rotation = R;
+          path_translation = t;
+          rotatePoint(T, j, R, t, dim, ceres_rot);
+          ITMEncoder(cloud_ICP,T, j, dim);
+          if (residual < min_residual){
             align_path_pub.publish(cloud_ICP);
           }
           else{
@@ -157,12 +156,11 @@ public:
       else if(laser_count >= path_flag*p_sampling_num && path_flag > p_sampling_round){
           double residual = pclAssembler(cloud_Hector, cloud_Tracker, i, j, M, T, R, t, dim, mass_center, ceres_rot);
           // if success and residual is bigger than something!? lucas
-          if (residual < 5){
+          rotatePoint(M, i, R, t, dim, ceres_rot);
+          ITMEncoder(cloud_ICP, M, i, dim);
+          if (residual < 250){
             ROS_INFO("###################### Sending Rotation Matrix ###################### \n");
             ROS_INFO("Residual is: %f", residual);
-            rotatePoint(M, i, R, t, dim, ceres_rot);
-            ITMEncoder(cloud_ICP, M, i, dim);
-
             // pcl::MomentOfInertiaEstimation <pcl::PointXYZ> feature_extractor;
             // feature_extractor.setInputCloud (cloud_Tracker);
             // feature_extractor.compute ();
@@ -171,7 +169,7 @@ public:
             // ROS_INFO("Rotation is %f", (atan2(R.val[1][0] , R.val[0][0])));
             if ((abs(t.x()) + abs(t.y()) + abs(t.z())) > p_gap_limit){
               icp_path_pub.publish(cloud_ICP);
-              ITMpub(laser_stamp_min, laser_stamp_max, R, t, mass_center, dim);
+              ITMpub(laser_stamp_min, laser_stamp_max, ceres_rot, mass_center, dim);
             }else{
               align_path_pub.publish(cloud_ICP);
               ROS_INFO("Displance or Rotation is too Small, No need to Correct");
@@ -179,6 +177,7 @@ public:
           }
           else{
             ROS_INFO("######Residual not valid, ICP has not converged.######");
+            align_path_pub.publish(cloud_ICP);
           }
           path_flag ++;
         }
@@ -207,7 +206,7 @@ public:
     tracker_path_pub.publish(cloud_Tracker);
 
 
-    double residual = 0;
+    double residual = 0.0;
     if (path_flag <= p_sampling_round){
       //aligning
     }
@@ -299,14 +298,30 @@ public:
     }
   }
 
-  void ITMpub(ros::Time laser_stamp_min, ros::Time laser_stamp_max, Eigen::Quaterniond Rr, Eigen::Vector3d t, Eigen::Vector3d mass_center, int dim){
+  void ITMpub(ros::Time laser_stamp_min, ros::Time laser_stamp_max, double *ceres_rot, Eigen::Vector3d mass_center, int dim){
+    double q_curr[4];
+    geometry_msgs::Quaternion ICP_rot;
+    geometry_msgs::Vector3 ICP_trans;
+    AngleAxisToQuaternion(ceres_rot, q_curr);
+    ICP_rot.w = q_curr[0];
+    ICP_rot.x = q_curr[1];
+    ICP_rot.y = q_curr[2];
+    ICP_rot.z = q_curr[3];
+    ICP_trans.x = ceres_rot[3];
+    ICP_trans.y = ceres_rot[4];
+    ICP_trans.z = ceres_rot[5];
+    geometry_msgs::TransformStamped ICP_message;
+    geometry_msgs::Transform new_frame_trans;
+    new_frame_trans.translation = ICP_trans;
+    new_frame_trans.rotation = ICP_rot;
     // t.getData(val_tm);
     // // Matrix Rr = Matrix::inv(R);
     // Rr.getData(val_Rm);
     // hector_icp::PLICP_Trans new_frame_trans;
     // new_frame_trans.header.stamp = ros::Time::now();
-    // new_frame_trans.header.frame_id = "camera_init";
-    // new_frame_trans.child_frame_id = "pcl_transed";
+    ICP_message.header.frame_id = "camera_init";
+    // ICP_message.child_frame_id = "aft_mapped";
+    ICP_message.transform = new_frame_trans;
     // new_frame_trans.transform.data.resize(5);
     // new_frame_trans.transform.data[0]= val_tm[0];
     // new_frame_trans.transform.data[1]= val_tm[1];
@@ -319,7 +334,7 @@ public:
     // }
     // new_frame_trans.begin_stamp = laser_stamp_min;
     // new_frame_trans.end_stamp = laser_stamp_max;
-    // PCL_Trans_pub.publish(new_frame_trans);//msg TF transform
+    PCL_Trans_pub.publish(ICP_message);//msg TF transform
     ROS_INFO("Current Trans Time: %f to %f\n", laser_stamp_min.toSec(), laser_stamp_max.toSec());
 
   }
@@ -414,7 +429,7 @@ public:
     cout<<"R = "<<cere_r_t[0]<< ", "<<cere_r_t[1]<< ", "<<cere_r_t[2]<<endl;
     cout<<"Q = "<<q_curr[0]<< ", "<<q_curr[1]<< ", "<<q_curr[2]<< "," << q_curr[3] <<endl;  
     cout<<"t = "<<cere_r_t[3]<< ", "<<cere_r_t[4]<< ", "<<cere_r_t[5]<<endl;
-    cout<<summary.final_cost<<endl;
+    cout<<"Final Cost = "<<summary.final_cost<<endl;
 
     R.w() = q_curr[0];
     R.x() = q_curr[1];
@@ -423,7 +438,7 @@ public:
     t.x() = cere_r_t[3];
     t.y() = cere_r_t[4];
     t.z() = cere_r_t[5];
-    return 1;
+    return summary.final_cost;
   }
 
     // private:

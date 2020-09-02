@@ -7,6 +7,9 @@ Panels:
         - /Status1
         - /odometry1/odomPath1
         - /odometry1/PointCloud21
+        - /TF1/Frames1
+        - /TF1/Tree1
+        - /TF1/Tree1/camera_init1
         - /PointCloud22/Status1
         - /Path1/Status1
         - /PointCloud23/Status1
@@ -666,7 +669,7 @@ Visualization Manager:
           Value: true
         camera_init:
           Value: true
-      Marker Scale: 1
+      Marker Scale: 100
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -700,18 +703,32 @@ Visualization Manager:
         TF: true
         Value: true
         mapping:
-          "": true
           Value: true
+          allMapCloud: true
+          corner: true
+          currPoints: true
+          leftcameraPath: true
+          map_corner: true
+          map_surf: true
+          mappingPath: true
+          surf: true
+          surround: true
+          used_corner: true
+          used_surf: true
         odometry:
           PointCloud2: true
           Value: true
           odomPath: true
         scan:
-          "": true
           Value: true
+          flat: true
+          raw_data: true
+          removPoints: true
+          scan: true
+          sharp: true
       Zoom Factor: 1
     - Class: rviz/Image
-      Enabled: false
+      Enabled: true
       Image Topic: /image_left
       Max Value: 1
       Median window: 5
@@ -721,9 +738,9 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/Image
-      Enabled: true
+      Enabled: false
       Image Topic: /image_right
       Max Value: 1
       Median window: 5
@@ -733,7 +750,7 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -767,8 +784,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0
-        Min Value: -112.7812728881836
+        Max Value: 5.04592752456665
+        Min Value: 0
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -905,7 +922,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 902.6986694335938
+      Distance: 615.163818359375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -920,10 +937,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.10479751229286194
+      Pitch: 0.2097974568605423
       Target Frame: body
       Value: XYOrbit (rviz)
-      Yaw: 2.6368088722229004
+      Yaw: 2.406808376312256
     Saved: ~
 Window Geometry:
   Camera:
