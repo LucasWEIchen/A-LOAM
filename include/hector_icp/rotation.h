@@ -25,7 +25,33 @@ inline void CrossProduct(const T x[3], const T y[3], T result[3]){
  
 //////////////////////////////////////////////////////////////////
  
- 
+template<typename T>
+inline void AngleAxisToFractionQuaternion(const T* angle_axis, T* quaternion, T fraction){
+  const T& a0 = angle_axis[0];
+  const T& a1 = angle_axis[1];
+  const T& a2 = angle_axis[2];
+  const T theta_squared = a0 * a0 + a1 * a1 + a2 * a2;
+
+  const T fraction_theta_squared = theta_squared / (fraction*fraction);
+
+  if(fraction_theta_squared > T(std::numeric_limits<double>::epsilon()) ){
+    const T theta = sqrt(fraction_theta_squared);
+    const T half_theta = theta * T(0.5);
+    const T k = sin(half_theta)/theta;
+    quaternion[0] = cos(half_theta);
+    quaternion[1] = a0 * k;
+    quaternion[2] = a1 * k;
+    quaternion[3] = a2 * k;
+  }
+  else{ // in case if theta_squared is zero
+    const T k(0.5);
+    quaternion[0] = T(1.0);
+    quaternion[1] = a0 * k;
+    quaternion[2] = a1 * k;
+    quaternion[3] = a2 * k;
+  }
+}
+
 // Converts from a angle anxis to quaternion : 
 template<typename T>
 inline void AngleAxisToQuaternion(const T* angle_axis, T* quaternion){

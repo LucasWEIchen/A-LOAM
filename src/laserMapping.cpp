@@ -128,7 +128,7 @@ Eigen::Vector3d t_wodom_curr(0, 0, 0);
 
 Eigen::Quaterniond q_ITM_curr(1, 0, 0, 0);
 Eigen::Vector3d t_ITM_curr(0, 0, 0);
-bool IMT_flag = false;
+int IMT_flag = 0;
 
 std::queue<sensor_msgs::PointCloud2ConstPtr> cornerLastBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> surfLastBuf;
@@ -157,21 +157,16 @@ nav_msgs::Path laserAfterMappedPath;
 // 雷达坐标系到世界坐标系有一个四元数和位移矫正 q_w_curr+t_w_curr
 // 某点在世界坐标系下位置 point_w
 void correctionAssociateToMap()
-{	
-	if (IMT_flag == true){
-		q_w_curr = q_ITM_curr * q_w_curr;
-		t_w_curr = q_ITM_curr * t_w_curr + t_ITM_curr;
-	// q_wmap_wodom = q_ITM_curr * q_wmap_wodom * q_wodom_curr.inverse();
-	// t_wmap_wodom = (t_w_curr + t_ITM_curr) - q_wmap_wodom * t_wodom_curr;
-	// t_wmap_wodom = t_ITM_curr;
-		// t_w_curr.x() += t_ITM_curr.x();
-		// t_w_curr.y() += t_ITM_curr.y();
-		// t_w_curr.z() += t_ITM_curr.z();
+{
+	Eigen::Quaterniond qres;
+	Eigen::Quaterniond qa = Eigen::Quaterniond::Identity();
+	Eigen::Vector3d t_slerp = t_ITM_curr / 10;
+	qres = qa.slerp(0.1, q_ITM_curr);
 
-	// t_wmap_wodom.x() = t_wmap_wodom.x();
-	// t_wmap_wodom.y() = t_wmap_wodom.y() + 10;
-	// t_wmap_wodom.z() = t_wmap_wodom.z();
-		IMT_flag = false;
+	if (IMT_flag < 10){
+		q_w_curr = qres * q_w_curr;
+		t_w_curr = qres * t_w_curr + t_slerp;
+		IMT_flag++;
 	}
 }
 
@@ -179,31 +174,15 @@ void correctionAssociateToMap()
 //求世界坐标系下某个点的四元数和位移
 void transformAssociateToMap()//计算最新局部位移在全局坐标系下的表达
 {	
-	// if (IMT_flag == true){
-	// 	q_w_curr = q_wmap_wodom * q_wodom_curr * q_ITM_curr;
-	// 	t_w_curr = q_wmap_wodom * t_wodom_curr + t_wmap_wodom + t_ITM_curr;
-	// 	IMT_flag = false;
-	// }
-	// else
-	// {
-		q_w_curr = q_wmap_wodom * q_wodom_curr;
-		t_w_curr = q_wmap_wodom * t_wodom_curr + t_wmap_wodom;
-	// }
+	q_w_curr = q_wmap_wodom * q_wodom_curr;
+	t_w_curr = q_wmap_wodom * t_wodom_curr + t_wmap_wodom;
 }
 
 //求世界坐标系下当前里程计坐标系的四元数与位移
 void transformUpdate()//累计全局位移
 {
-	// if (IMT_flag == true){
-	// 	q_w_curr = q_ITM_curr * q_w_curr;
-	// 	t_w_curr = t_w_curr + t_ITM_curr;
-	// 	q_wmap_wodom = q_ITM_curr * q_wmap_wodom * q_wodom_curr.inverse();
-	// 	t_wmap_wodom = t_wmap_wodom + q_wodom_curr.inverse() * t_ITM_curr;
-	// 	IMT_flag = false;
-	// }
 	q_wmap_wodom = q_w_curr * q_wodom_curr.inverse();
 	t_wmap_wodom = t_w_curr - q_wmap_wodom * t_wodom_curr;
-	
 }
 
 //求某点世界坐标系下的位置
@@ -287,6 +266,7 @@ void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr &laserOdometry)
 
 void laserTrackerCallBack(const geometry_msgs::TransformStamped Trans)//lucas
 {
+	IMT_flag = 0;
 	Eigen::Quaterniond q_ITM_last;
 	Eigen::Vector3d t_ITM_last;
 	t_ITM_last.x() = Trans.transform.translation.x;
@@ -296,28 +276,30 @@ void laserTrackerCallBack(const geometry_msgs::TransformStamped Trans)//lucas
 	q_ITM_last.x() = Trans.transform.rotation.x;
 	q_ITM_last.y() = Trans.transform.rotation.y;
 	q_ITM_last.z() = Trans.transform.rotation.z;
-
+	
 	q_ITM_curr = q_ITM_last;
 	t_ITM_curr = t_ITM_last;
-	IMT_flag = true;
+	// double fraction = 10.00;
+	// double quaternion_in[4];
+	// double angleaxis_mid[3];
+	// double quaternion_out[4];
 
-	// q_w_curr = q_ITM_curr * q_w_curr;
-	// t_w_curr = t_w_curr + t_ITM_curr;
-	// q_wmap_wodom = q_ITM_curr * q_wmap_wodom * q_wodom_curr.inverse();
-	// t_wmap_wodom = (t_w_curr + t_ITM_curr) - q_wmap_wodom * t_wodom_curr;
-	// q_ITM_curr = q_w_curr * quaternion2;
-	// m_2_q(val_Rm, q_ITM_curr);
+	// quaternion_in[0]=q_ITM_last.w();
+	// quaternion_in[1]=q_ITM_last.x();
+	// quaternion_in[2]=q_ITM_last.y();
+	// quaternion_in[3]=q_ITM_last.z();
 
-	// q_w_curr = q_ITM_curr * q_w_curr;
-	// t_w_curr = t_w_curr + t_ITM_curr;
+	// QuaternionToAngleAxis(quaternion_in, angleaxis_mid);
+	// AngleAxisToFractionQuaternion(angleaxis_mid, quaternion_out, fraction);
 
-	// // transformUpdate();
-	// q_wmap_wodom = q_ITM_last * q_wmap_wodom;
-	// t_wmap_wodom = t_wmap_wodom + t_ITM_curr;
-	
-	printf("------------------------------------------------------\n");
-	printf("QW %f, QX%f, QY%f, QZ%f\n TX%f, TY%f, TZ%f\n",  q_ITM_curr.w(), q_ITM_curr.x(),q_ITM_curr.y(),q_ITM_curr.z(),t_ITM_curr.x(),t_ITM_curr.y(),t_ITM_curr.z());
-	printf("------------------------------------------------------\n");
+	// q_ITM_curr.w() = quaternion_out[0];
+	// q_ITM_curr.x() = quaternion_out[1];
+	// q_ITM_curr.y() = quaternion_out[2];
+	// q_ITM_curr.z() = quaternion_out[3];
+	// t_ITM_curr = t_ITM_last/fraction;
+	// printf("------------------------------------------------------\n");
+	// printf("QW %f, QX%f, QY%f, QZ%f\n TX%f, TY%f, TZ%f\n",  q_ITM_curr.w(), q_ITM_curr.x(),q_ITM_curr.y(),q_ITM_curr.z(),t_ITM_curr.x(),t_ITM_curr.y(),t_ITM_curr.z());
+	// printf("------------------------------------------------------\n");
 }
 
 void process()

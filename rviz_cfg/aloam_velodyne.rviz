@@ -7,13 +7,10 @@ Panels:
         - /Status1
         - /odometry1/odomPath1
         - /odometry1/PointCloud21
+        - /mapping1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /TF1/Tree1/camera_init1
-        - /PointCloud22/Status1
         - /Path1/Status1
-        - /PointCloud23/Status1
-        - /PointCloud24/Status1
       Splitter Ratio: 0.5
     Tree Height: 326
   - Class: rviz/Selection
@@ -202,14 +199,14 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
+            Max Value: 4.937912940979004
+            Min Value: -4.905878067016602
             Value: true
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
           Color: 255; 255; 255
-          Color Transformer: FlatColor
+          Color Transformer: AxisColor
           Decay Time: 0
           Enabled: false
           Invert Rainbow: false
@@ -222,7 +219,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.05000000074505806
+          Size (m): 0.10000000149011612
           Style: Flat Squares
           Topic: /laser_cloud_map
           Unreliable: false
@@ -649,7 +646,7 @@ Visualization Manager:
       Enabled: false
       Name: scan
     - Class: rviz/Image
-      Enabled: true
+      Enabled: false
       Image Topic: /kitti/image
       Max Value: 1
       Median window: 5
@@ -659,7 +656,7 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
@@ -720,12 +717,8 @@ Visualization Manager:
           Value: true
           odomPath: true
         scan:
+          "": true
           Value: true
-          flat: true
-          raw_data: true
-          removPoints: true
-          scan: true
-          sharp: true
       Zoom Factor: 1
     - Class: rviz/Image
       Enabled: true
@@ -740,7 +733,7 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Class: rviz/Image
-      Enabled: false
+      Enabled: true
       Image Topic: /image_right
       Max Value: 1
       Median window: 5
@@ -750,7 +743,7 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -784,8 +777,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 5.04592752456665
-        Min Value: 0
+        Max Value: 4.884584903717041
+        Min Value: -0.04524192586541176
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -922,25 +915,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 615.163818359375
+      Distance: 124.85594177246094
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 161.55010986328125
-        Y: -21.081409454345703
-        Z: -2.309755802154541
+        X: 106.70925903320312
+        Y: -34.45579147338867
+        Z: -2.3097548484802246
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2097974568605423
+      Pitch: 0.22979789972305298
       Target Frame: body
       Value: XYOrbit (rviz)
-      Yaw: 2.406808376312256
+      Yaw: 5.0349907875061035
     Saved: ~
 Window Geometry:
   Camera:

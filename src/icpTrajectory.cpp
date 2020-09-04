@@ -50,7 +50,7 @@ public:
     n_.param("/hector_icp/sampling_round", p_sampling_round, 0);
     n_.param("/hector_icp/sampling_num", p_sampling_num, 150);
     n_.param("/hector_icp/iter_cycle", p_iter_cycle,5);
-    n_.param("/hector_icp/gap_limit", p_gap_limit, 0.2f);
+    n_.param("/hector_icp/gap_limit", p_gap_limit, 0.0f);
     n_.param("/hector_icp/angle_limit", p_angle_limit, 0.02f);
     n_.param("/hector_icp/orin_corrention", p_orin_corr, false);
     reference_location_init = 0;
@@ -158,7 +158,7 @@ public:
           // if success and residual is bigger than something!? lucas
           rotatePoint(M, i, R, t, dim, ceres_rot);
           ITMEncoder(cloud_ICP, M, i, dim);
-          if (residual < 250){
+          if (residual < 200){
             ROS_INFO("###################### Sending Rotation Matrix ###################### \n");
             ROS_INFO("Residual is: %f", residual);
             // pcl::MomentOfInertiaEstimation <pcl::PointXYZ> feature_extractor;
