@@ -2,12 +2,12 @@
     <param name="/use_sim_time" value="true" />
 
     <param name="sampling_round" value="0" />
-    <param name="sampling_num" value="100" />
+    <param name="sampling_num" value="250" />
     <param name="iter_cycle" value="5" />
     <param name="gap_limit" value="0.0" />
     <param name="angle_limit" value="0.00" />
-    <param name="residual_limit" value="200" />
-    <param name="slerp" value="30" />
+    <param name="residual_limit" value="12" />
+    <param name="slerp" value="100" />
 
     <param name="scan_line" type="int" value="16" />
 
@@ -27,7 +27,7 @@
 
     <node pkg="aloam_velodyne" type="alaserMapping" name="alaserMapping" output="log" />
     
-    <!-- <node pkg="aloam_velodyne" type="icpTrajectory" name="icpTrajectory" output="screen" /> -->
+    <node pkg="aloam_velodyne" type="icpTrajectory" name="icpTrajectory" output="screen" />
 
     <arg name="rviz" default="true" />
     <group if="$(arg rviz)">
