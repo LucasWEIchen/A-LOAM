@@ -431,7 +431,7 @@ public:
     //开始求解
     ceres::Solve(option, &problem, &summary);
     //显示优化信息
-    cout << summary.FullReport() << endl;
+    // cout << summary.FullReport() << endl;
 
     // verify p1 = R*p2 + t
     ceres_rot3[0] = cere_r_t[0];
@@ -445,7 +445,7 @@ public:
     cout << "R = " << cere_r_t[0] << ", " << cere_r_t[1] << ", " << cere_r_t[2] << endl;
     cout << "Q = " << q_curr[0] << ", " << q_curr[1] << ", " << q_curr[2] << "," << q_curr[3] << endl;
     cout << "t = " << cere_r_t[3] << ", " << cere_r_t[4] << ", " << cere_r_t[5] << endl;
-    cout << "Final Cost = " << summary.final_cost << endl;
+    cout << "Average Cost = " << summary.final_cost/p_sampling_num << endl;
 
     R.w() = q_curr[0];
     R.x() = q_curr[1];
@@ -456,7 +456,7 @@ public:
     t.z() = cere_r_t[5];
 
     if(summary.IsSolutionUsable()==true){
-      return summary.final_cost;
+      return summary.final_cost/p_sampling_num;
     }else{
       return 99999;
     }
